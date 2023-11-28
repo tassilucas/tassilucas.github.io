@@ -59,6 +59,7 @@ dirLight.position.copy(new THREE.Vector3(10, 40, -50));
 // Texture
 var textureLoader = new THREE.TextureLoader();
 var cement = textureLoader.load('../assets/textures/stone.jpg');
+var back_texture = textureLoader.load('../assets/textures/intertravado.jpg');
 
 // Shadow settings
 dirLight.castShadow = true;
@@ -88,8 +89,8 @@ window.addEventListener('resize', function(){
 
 window.addEventListener('click', newGame)
 
-let camPos  = new THREE.Vector3(0, 120, 70);
-let camLook = new THREE.Vector3(0, -20, 0);
+let camPos  = new THREE.Vector3(0, 110, 70);
+let camLook = new THREE.Vector3(0, -22.2, 0);
 
 // Create an orthogonal camera
 let width = window.innerWidth;
@@ -123,7 +124,6 @@ blocoLoader.load('../assets/sounds/bloco1.mp3', function( buffer ) {
     blocoSound.setBuffer(buffer);
     blocoSound.setLoop(false);
     blocoSound.setVolume(0.5);
-    blocoSound.duration = 0.17 
 });
 
 const twoHitSound = new THREE.Audio(listener);
@@ -133,7 +133,6 @@ twoHitLoader.load('../assets/sounds/bloco2.mp3', function( buffer ) {
     twoHitSound.setBuffer(buffer);
     twoHitSound.setLoop(false);
     twoHitSound.setVolume(0.5);
-    twoHitSound.duration = 0.09
 });
 
 const extrudeSettings = {
@@ -290,10 +289,7 @@ function checkMouseIntersection(){
 
 function setTexture(mesh, texture) {
   let geometry = mesh.geometry;
-  let material = mesh.material;
-
-  geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(mesh.geometry.attributes.uv), 2));
-  material.map = texture;
+  mesh.material[2].map = texture;
 }
 
 function setupRebatedor()
@@ -301,36 +297,46 @@ function setupRebatedor()
   let auxMat = new THREE.Matrix4();
 
   let cubeMesh = new THREE.Mesh(new THREE.BoxGeometry(5, 9, 20));
-  let cylinderGeometry = new THREE.CylinderGeometry(4, 4, 4, 32, 32, false);
-  let cylinderMesh = new THREE.Mesh(cylinderGeometry, material);
+  let cylinderMesh = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 4, 32, 32, false));;
+  let topCubeMesh = new THREE.Mesh(new THREE.BoxGeometry(5, 9, 20), setDefaultMaterial('blue'));
+
   cylinderMesh.geometry.scale(1, 1, 2);
   cubeMesh.position.x += 2
+  topCubeMesh.position.y = 5;
+  topCubeMesh.position.x = -3;
 
   updateObject(cubeMesh);
+  updateObject(topCubeMesh);
 
   // CSG holders
-  let csgObject, cubeCSG, cylinderCSG
+  let csgObject, cubeCSG, cylinderCSG, topCubeCSG, finalObject;
 
-  cylinderCSG = CSG.fromMesh(cylinderMesh);
-  cubeCSG = CSG.fromMesh(cubeMesh);
-  csgObject = cylinderCSG.subtract(cubeCSG);
+  cylinderCSG = CSG.fromMesh(cylinderMesh, 0);
+  cubeCSG = CSG.fromMesh(cubeMesh, 1);
+  topCubeCSG = CSG.fromMesh(topCubeMesh, 2);
+  csgObject = cylinderCSG.subtract(topCubeCSG);
+  finalObject = csgObject.subtract(cubeCSG);
 
-  let shipTexture = textureLoader.load('../assets/textures/stonewall.jpg');
+  let shipTexture = textureLoader.load('../assets/textures/crate.jpg');
+  let backMaterial = new THREE.MeshLambertMaterial({map: back_texture});
+  let finalMesh = CSG.toMesh(finalObject, auxMat, [material, backMaterial, setDefaultMaterial('white')]);
 
-  let finalMesh = CSG.toMesh(csgObject, auxMat);
+  shipTexture.repeat.set(3, 10);
+  shipTexture.wrapS = shipTexture.wrapT = THREE.RepeatWrapping 
   setTexture(finalMesh, shipTexture);
-
-  scene.add(finalMesh);
+  console.log(finalMesh);
 
   rebatedor = finalMesh;
   rebatedor.castShadow = true;
   rebatedor.rotateY(-Math.PI/2);
-  scene.add(rebatedor)
+  rebatedor.position.set(0, 0, 0);
 
   rebatedor.bb = new THREE.Box3();
   rebatedor.helper = new THREE.Box3Helper(rebatedor.bb, 'white');
   rebatedor.bb.setFromObject(rebatedor);
-  scene.add(rebatedor.helper);
+
+  // scene.add(rebatedor.helper);
+  scene.add(rebatedor)
 
   rebatedor.position.z = 40;
   
@@ -577,18 +583,19 @@ function checkCollision(currBall){
           // Implementing two lifes wall
           if(wall[i][j].twoLife){
             if(wall[i][j].hitted){
+              playSound(blocoSound);
               wall[i][j].live = false;
               wall[i][j].visible = false;
               counter = counter + 1;
             }
             else{
-              twoHitSound.play();
+              playSound(twoHitSound);
               wall[i][j].hitted = true;
-              wall[i][j].material = new THREE.MeshLambertMaterial({color:"dark grey"});
+              wall[i][j].material = new THREE.MeshLambertMaterial({color:0xcecece});
             }
           }
           else{
-            blocoSound.play();
+            playSound(blocoSound);
             wall[i][j].live = false;
             wall[i][j].visible = false;
             counter = counter + 1;
@@ -610,18 +617,19 @@ function checkCollision(currBall){
           // Implementing two lifes wall
           if(secondWall[i][j].twoLife){
             if(secondWall[i][j].hitted){
+              playSound(blocoSound);
               secondWall[i][j].live = false;
               secondWall[i][j].visible = false;
               counter = counter + 1;
             }
             else{
-              twoHitSound.play();
+              playSound(twoHitSound);
               secondWall[i][j].hitted = true;
-              secondWall[i][j].material = new THREE.MeshLambertMaterial({color:"dark grey"});
+              secondWall[i][j].material = new THREE.MeshLambertMaterial({color:0xcecece});
             }
           }
           else{
-            blocoSound.play();
+            playSound(blocoSound);
             secondWall[i][j].live = false;
             secondWall[i][j].visible = false;
             counter = counter + 1;
@@ -638,7 +646,7 @@ function checkCollision(currBall){
     for(let i=0; i<11; i++){
       for(let j=0; j<6; j++){
         if(currBall.bb.intersectsBox(thirdWall[i][j].bb) && thirdWall[i][j].live){
-          blocoSound.play();
+          playSound(blocoSound);
           collideWithEdge = false;
 
           // Checking if collided with immortal wall block
@@ -657,7 +665,7 @@ function checkCollision(currBall){
     // checking collisions against pink wall
     for(let j=0; j<3; j++){
       if(currBall.bb.intersectsBox(auxThirdWall[j].bb) && auxThirdWall[j].live){
-        blocoSound.play();
+        playSound(blocoSound);
         collideWithEdge = false;
         auxThirdWall[j].live = false;
         auxThirdWall[j].visible = false;
@@ -904,7 +912,7 @@ function updateGameBall(currBall){
 
   if(collisionRebatedor){
     threatCollisionRebatedor(currBall);
-    rebatedorSound.play();
+    playSound(rebatedorSound);
   }
 }
 
@@ -930,7 +938,7 @@ function endGame(){
   if(level == 3){
     for(let i=0; i<11; i++)
       for(let j=0; j<6; j++)
-        if(thirdWall[i][j].live)
+        if(thirdWall[i][j].live && !thirdWall[i][j].immortal)
           return false;
 
     for(let i=0; i<3; i++)
@@ -939,10 +947,11 @@ function endGame(){
 
     endGameScreen();
     isPlaying = false;
+    isPaused = true;
     return true;
   }
 
-  // isPlaying = false;
+  isPlaying = false;
   return true;
 }
 
@@ -1275,7 +1284,7 @@ function drawSpeed(){
     textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
     // Set the position of the text mesh
-    textMesh.position.set(25, 10, 61.5);
+    textMesh.position.set(15, 10, 58);
     textMesh.rotation.x = -Math.PI / 2;
 
     // Add the text mesh to the scene
@@ -1335,9 +1344,11 @@ function increaseBallSpeed(){
 }
 
 /*
-let auxSphereGeometry = new THREE.SphereGeometry(0.5, 32, 16);
+let auxSphereGeometry = new THREE.SphereGeometry(4, 4, 4);
 let auxSphere = new THREE.Mesh(auxSphereGeometry, new THREE.MeshLambertMaterial({color: 0xffff00}));
 auxSphere.position.set(0, 0, 0);
+auxSphere.geometry.scale(2, 1, 1);
+auxSphere.position.z = 39.5;
 auxSphere.bb = new THREE.Box3().setFromObject(auxSphere);
 console.log(auxSphere)
 console.log(auxSphere.bb)
@@ -1379,6 +1390,12 @@ function reviveBall(){
   clock.start();
 }
 
+function playSound(sound){
+  sound.stop();
+  sound.offset = 0;
+  sound.play();
+}
+
 drawSpeed();
 startFirstLevel();
 render();
@@ -1392,8 +1409,12 @@ function render()
       lifesArray[lifes].visible = false;
     }
     else{
-      endGameScreen();
+      // endGameScreen();
+      lifesArray[lifes].visible = false;
       isPlaying = false;
+      gameBall.speed = 0.4;
+      updateText();
+      startGame(true);
     }
   }
 

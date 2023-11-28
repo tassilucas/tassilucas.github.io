@@ -38,9 +38,9 @@ function buildObjects()
    let auxMat = new THREE.Matrix4();
    
    // Base objects
-   let cubeMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2))
+   let cubeMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshPhongMaterial({color: 'red'}))
    let sphereMesh = new THREE.Mesh( new THREE.SphereGeometry(1.45, 20, 20) )
-   let cylinderMesh = new THREE.Mesh( new THREE.CylinderGeometry(0.85, 0.85, 2, 20))
+   let cylinderMesh = new THREE.Mesh( new THREE.CylinderGeometry(0.85, 0.85, 2, 20), new THREE.MeshPhongMaterial({color: 'lightblue'}))
    let torusMesh = new THREE.Mesh( new THREE.TorusGeometry(0.8, 0.2, 20, 20))   
 
    // CSG holders
@@ -52,8 +52,8 @@ function buildObjects()
    cylinderCSG = CSG.fromMesh(cylinderMesh)
    cubeCSG = CSG.fromMesh(cubeMesh)   
    csgObject = cubeCSG.intersect(cylinderCSG) // Execute intersection
-   mesh2 = CSG.toMesh(csgObject, auxMat)
-   mesh2.material = new THREE.MeshPhongMaterial({color: 'lightblue'})
+   mesh2 = CSG.toMesh(csgObject, auxMat, [cubeMesh.material, cylinderMesh.material])
+   updateObject(mesh2)
    mesh2.rotateX(THREE.MathUtils.degToRad(90))
    mesh2.rotateY(THREE.MathUtils.degToRad(-90))
    mesh2.position.set(0, 0, 0.9)
